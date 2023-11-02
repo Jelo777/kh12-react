@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import {Modal} from "bootstrap";
 
 const Exam10 = () => {
   const [items, setItems] = useState([
@@ -14,6 +15,24 @@ const Exam10 = () => {
     { itemNo: 10, itemName: "하리보젤리", itemPrice: 5500, itemType: "식품", edit: false }
   ]);
   const [backup, setBackup] = useState([]);
+  const [data, setData] = useState({
+    itemName: "",
+    itemPrice: "",
+    itemType: ""
+  });
+
+  //useRef : 특정 대상(태그)을 참조할 수 있는 훅
+  //- const 이름 : useRef(초기값);
+  //- 태그에 ref라는 속성으로 이름을 지정해두면 언제든지 불러서 사용할 수 있다
+  const bsModal = useRef();
+
+  const changeData = e => {
+    const newData = {
+      ...data,
+      [e.target.name]: e.target.value
+    };
+    setData(newData);
+  };
 
   //(중요) "시작하자마자" items의 내용을 backup으로 복제(1회)
   useEffect(() => {
@@ -110,14 +129,76 @@ const Exam10 = () => {
 
   //아이템 삭제
   //- 배열에서 항목을 삭제할 때도 filter를 사용한다
-  const deleteItem = (target)=>{
-    const newItems = items.filter(item=>item.itemNo !== target.itemNo);
+  const deleteItem = (target) => {
+    const newItems = items.filter(item => item.itemNo !== target.itemNo);
     setItems(newItems);
 
     //백업삭제
-    const newBackup = backup.filter(item=>item.itemNo !== target.itemNo);
+    const newBackup = backup.filter(item => item.itemNo !== target.itemNo);
     setBackup(newBackup);
 
+  }
+
+  //항목 추가
+  //- data에 들어있는 객체를 복사해서 items에 추가
+  //- data는 깨끗하게 정리
+  const addItem = () => {
+
+    const itemNo = items.length == 0 ? 1 : items[items.length - 1].itemNo + 1;
+
+    //아이템 추가
+    //const newItems = items.concat({...data});
+    const newItems = [
+      ...items,
+      {
+        ...data,
+        edit: false,
+        itemNo: itemNo
+      }];
+    setItems(newItems);
+
+    //백업추가
+    const newBackup = [
+      ...backup,
+      {
+        ...data,
+        edit: false,
+        itemNo: itemNo
+      }];
+    setBackup(newBackup);
+
+    //입력창 초기화
+    setData({
+      itemName: "",
+      itemPrice: "",
+      itemType: ""
+    });
+
+    closeModal();
+  };
+
+  //모달 여는 함수
+  const openModal = e => {
+    // var modal = new Modal(document.querySelector("#exampleModal"));//VanilaJS
+    var modal = new Modal(bsModal.current);//React
+    modal.show();
+  };
+  //모달 닫는 함수
+  const closeModal =()=>{
+    // var modal = Modal.getInstance(document.querySelector("#exampleModal"));//VanilaJS
+    var modal = Modal.getInstance(bsModal.current);//React
+    modal.hide();
+  }
+
+  const cancelAddItem=()=>{
+    //입력창 초기화
+    setData({
+      itemName: "",
+      itemPrice: "",
+      itemType: ""
+    });
+
+    closeModal();
   }
   return (
     <div className="container-fluid">
@@ -130,7 +211,10 @@ const Exam10 = () => {
 
           <div className="row mt-4">
             <div className="col">
-              <button type="button" className="btn btn-primary">추가</button>
+              <button type="button" className="btn btn-primary"
+                                          onClick={openModal}>
+                신규등록
+              </button>
             </div>
           </div>
 
@@ -181,7 +265,7 @@ const Exam10 = () => {
                           <button className="btn btn-sm btn-warning"
                             onClick={e => changeToEdit(item)}>수정</button>
                           <button className="btn btn-sm btn-danger ms-1"
-                            onClick={e =>deleteItem(item)}>삭제</button>
+                            onClick={e => deleteItem(item)}>삭제</button>
                         </td>
                       </tr>
                     )
@@ -192,6 +276,49 @@ const Exam10 = () => {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Modal */}
+      <div className="modal fade" ref={bsModal} 
+        data-bs-backdrop="static" tabIndex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div className="modal-dialog" role="document">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title" id="exampleModalLabel">신규 상품 등록</h5>
+              {/* <button type="button" className="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button> */}
+            </div>
+            <div className="modal-body">
+              <div className="row"><div className="col">
+                <label className="form-label">상품명</label>  
+                <input name="itemName" value={data.itemName} 
+                  onChange={changeData} className="form-control"/>
+              </div></div>
+              <div className="row"><div className="col">
+                <label className="form-label">판매가</label>  
+                <input name="itemPrice" value={data.itemPrice} 
+                  onChange={changeData} className="form-control"/>
+              </div></div>
+              <div className="row"><div className="col">
+                <label className="form-label">상품분류</label>  
+                <input name="itemType" value={data.itemType} 
+                  onChange={changeData} className="form-control"/>
+              </div></div>
+
+            </div>
+            <div className="modal-footer">
+              {/* 자동으로 닫히게 하는 버튼 */}
+              {/* <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">취소</button> */}
+              
+              {/* 수동으로 원하는 로직을 추가하여 닫히게 하는 버튼 */}
+              <button type="button" className="btn btn-secondary" 
+                onClick={cancelAddItem}>취소</button>
+              <button type="button" className="btn btn-primary" 
+                onClick={addItem}>추가</button>
+            </div>
+          </div>
         </div>
       </div>
 
